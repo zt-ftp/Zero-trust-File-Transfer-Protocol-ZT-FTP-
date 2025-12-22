@@ -79,7 +79,8 @@ public class Server extends Thread {
     }
     private void register(String username,String password,String role){
         users.put(username,new User(username,password,role));
-
+        //you should send a sesstion key to the client here(read the docs)
+        //also you should save the new user in the users file
 
     }
 
