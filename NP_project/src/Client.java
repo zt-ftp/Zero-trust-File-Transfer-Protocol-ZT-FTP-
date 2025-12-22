@@ -23,11 +23,8 @@ public class Client {
     }
 
     private void register() throws IOException {
-//        BufferedReader in=new BufferedReader(new InputStreamReader(socket.getInputStream()));
-//        PrintWriter out =new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
         out.write("register");
         out.flush();
-        //Scanner input=new Scanner(System.in);
 
         System.out.println("Please enter your Username: ");
         String username = input.nextLine();
@@ -48,11 +45,7 @@ public class Client {
 
     private boolean login() throws IOException{
 
-        //create necessary InputStream/OutputSteam objects
-//        BufferedReader in=new BufferedReader(new InputStreamReader(socket.getInputStream()));
-//        PrintWriter out =new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
 
-        //Scanner input=new Scanner(System.in);
 
         while(true) {
 
