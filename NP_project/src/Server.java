@@ -1,166 +1,3 @@
-//import java.io.*;
-//import java.net.Socket;
-//import java.nio.file.Files;
-//import java.util.*;
-//
-//public class Server extends Thread {
-//
-//    private Socket client;
-//    private PrintWriter write;
-//    private BufferedReader read ;
-//
-//     private Map<String,User> users;
-//     private Map<String, List<String>> files;
-//
-//
-//    public Server(Socket accept) throws IOException {
-//        client=accept;
-//        write = new PrintWriter(this.client.getOutputStream());
-//        read = new BufferedReader(new InputStreamReader(this.client.getInputStream()));
-//        users=new HashMap<>();
-//        files=new HashMap<>();
-//    }
-//
-//
-//    public void loadUsersFromFile(String pathFile) throws Exception {
-//        Properties props=new Properties();
-//
-//        try{
-//
-//            FileInputStream file=new FileInputStream(pathFile);
-//            props.load(file);
-//        }catch (FileNotFoundException e){
-//            throw new Exception("No file with this path ......");
-//        }
-//
-//        for (String username :props.stringPropertyNames() ){
-//            String value=props.getProperty(username).trim();
-//
-//            String []userinfo=value.split(",");
-//            if (userinfo.length!=2)continue;
-//            users.put(username, new User(username,userinfo[0].trim(),userinfo[1].trim() ));
-//        }
-//
-//    }
-//    public void loadUsersFilesFromFile(String pathFile) throws Exception {
-//        Properties props=new Properties();
-//
-//        try{
-//            FileInputStream file=new FileInputStream(pathFile);
-//            props.load(file);
-//        }catch (FileNotFoundException e){
-//            throw new Exception("No file with this path ......");
-//        }
-//        for (String username :props.stringPropertyNames() ){
-//            String value=props.getProperty(username).trim();
-//
-//            String []filesList=value.split(",");
-//            files.put(username,List.of(filesList));
-//        }
-//
-//    }
-//    public void addNewUser(User user){
-//        users.put(user.getUsername(), new User(user.getUsername(),user.getPassword(),user.getRole()));
-//    }
-//    public boolean checkUserExists(String username){
-//        return users.containsKey(username);
-//    }
-//    public boolean checkUserFilesExists(String username){
-//
-//        return !files.get(username).isEmpty();
-//    }
-//    private void login(String username,String password) throws Exception {
-//
-//        if(!checkUserExists(username))throw new Exception("No user with this username.....");
-//        if (!users.get(username).getPassword().equals(password))throw new Exception("Wrong password.....");
-//        //you should send a sesstion key to the client here(read the docs)
-//        System.out.println("The user "+username+" login in the system ....");
-//
-//
-//    }
-//    private void register(String username,String password,String role){
-//        users.put(username,new User(username,password,role));
-//        //you should send a sesstion key to the client here(read the docs)
-//        //also you should save the new user in the users file
-//
-//    }
-//    public void authenticate()throws IOException  {
-//        //            while (true) {
-//        String command = read.readLine();
-//        if (command.equals("login")) {
-//            String credentials = read.readLine();
-//            String[] parts = credentials.split(",");
-//            try {
-//                login(parts[0], parts[1]);
-//                write.write("login success\n");
-//                write.flush();
-//            } catch (Exception e) {
-//                System.out.println(e.getMessage());
-//                write.write(e.getMessage() + "\n");
-//                write.flush();
-//            }
-//        } else if (command.equals("register")) {
-//            String credentials = read.readLine();
-//            String[] parts = credentials.split(",");
-//            register(parts[0], parts[1], parts[2]);
-//            write.write("register success\n");
-//            write.flush();
-//        }
-////            }
-//    }
-//
-//    public String uploadFile(String filename){
-//        //code to upload file
-//        return "file uploaded successfully";
-//    }
-//    public String downloadFile(String filename,boolean isSuperUser){
-//
-//        //code to download file:
-//
-//        if (!isSuperUser){
-//            //check if the file belongs to the user
-//            //if not return error message
-//        }else {
-//
-//        }
-//
-//        return "file downloaded successfully";
-//    }
-//    public String deleteFile(String filename){
-//        //code to delete file
-//        return "file deleted successfully";
-//    }
-//    public String listFiles(String username){
-//        if(!checkUserFilesExists(username)){
-//            return "No files for this user";
-//        }
-//        List<String> userFiles=files.get(username);
-//        StringBuilder sb=new StringBuilder();
-//        for (String file:userFiles){
-//            sb.append(file).append("\n");
-//        }
-//        return sb.toString();
-//    }
-//
-//
-//    public void run(){
-//        try {
-//            loadUsersFromFile("users.properties");
-//            loadUsersFilesFromFile("filesForUsers.properties");
-//            authenticate();
-//
-//
-//
-//        } catch (Exception e) {
-//            System.out.println(e.getMessage());
-//        }
-//
-//
-//
-//    }
-//}
-
-
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.*;
@@ -169,9 +6,9 @@ import java.util.*;
 
 public class Server extends Thread {
 
-    private Socket client;
-    private DataOutputStream out;
-    private DataInputStream in;
+    private final Socket client;
+    private final DataOutputStream out;
+    private final DataInputStream in;
 
     private final Map<String, User> users = new HashMap<>();
 
@@ -285,6 +122,7 @@ public class Server extends Thread {
                 String payload = in.readUTF();
                 String[] parts = payload.split(",", 2);
                 try {
+                    if (parts.length < 2) throw new IOException("Bad login payload");
                     login(parts[0].trim(), parts[1].trim());
                     out.writeUTF("OK LOGIN");
                     out.writeUTF("SESSION " + sessionKey);
@@ -298,6 +136,7 @@ public class Server extends Thread {
                 String payload = in.readUTF();
                 String[] parts = payload.split(",", 3);
                 try {
+                    if (parts.length < 3) throw new IOException("Bad register payload");
                     register(parts[0].trim(), parts[1].trim(), parts[2].trim());
                     out.writeUTF("OK REGISTER");
                     out.writeUTF("SESSION " + sessionKey);
@@ -313,7 +152,7 @@ public class Server extends Thread {
     }
 
     private boolean verifySessionKey(String providedKey) throws IOException {
-        if (sessionKey.equals(providedKey)) {
+        if (sessionKey != null && sessionKey.equals(providedKey)) {
             badKeyStreak = 0;
             return true;
         }
@@ -332,21 +171,43 @@ public class Server extends Thread {
         return false;
     }
 
-    private void handleUpload(User u, String filename) throws IOException {
+
+    private String requireTargetUser(User requester, String[] parts, int targetIndex) throws IOException {
+        if (!requester.getRole().equals("super")) {
+            return currentUser;
+        }
+
+        if (parts.length <= targetIndex) throw new IOException("Missing target username");
+        String target = parts[targetIndex].trim();
+        if (target.isEmpty()) throw new IOException("Missing target username");
+        if (!users.containsKey(target)) throw new IOException("Target user does not exist");
+
+        ensureUserFolder(target);
+        return target;
+    }
+
+    private void handleUpload(String targetUser, String filename) throws IOException {
         if (filename == null || filename.isBlank()) {
             sendError("Missing filename");
             return;
         }
 
         long size = in.readLong();
-        Path target = safeUserPath(currentUser, filename);
+        if (size < 0) {
+            sendError("Invalid file size");
+            return;
+        }
 
-        try (OutputStream fos = Files.newOutputStream(target)) {
+        Path target = safeUserPath(targetUser, filename);
+
+        try (OutputStream fos = Files.newOutputStream(target,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+
             byte[] buffer = new byte[64 * 1024];
             long remaining = size;
             while (remaining > 0) {
                 int r = in.read(buffer, 0, (int) Math.min(buffer.length, remaining));
-                if (r == -1) throw new EOFException();
+                if (r == -1) throw new EOFException("Client ended stream early");
                 fos.write(buffer, 0, r);
                 remaining -= r;
             }
@@ -355,9 +216,14 @@ public class Server extends Thread {
         sendOk();
     }
 
-    private void handleDownload(User u, String filename) throws IOException {
-        Path filePath = u.getRole().equals("super") ? findFileInAllUsers(filename) : safeUserPath(currentUser, filename);
-        if (filePath == null || !Files.exists(filePath)) {
+    private void handleDownload(String targetUser, String filename) throws IOException {
+        if (filename == null || filename.isBlank()) {
+            sendError("Missing filename");
+            return;
+        }
+
+        Path filePath = safeUserPath(targetUser, filename);
+        if (!Files.exists(filePath) || !Files.isRegularFile(filePath)) {
             sendError("Not found");
             return;
         }
@@ -368,14 +234,15 @@ public class Server extends Thread {
         out.flush();
     }
 
-    private void handleList(User u) throws IOException {
-        Path userDir = SERVER_DIR.resolve(currentUser).normalize();
+    private void handleList(String targetUser) throws IOException {
+        Path userDir = SERVER_DIR.resolve(targetUser).normalize();
         List<String> names = new ArrayList<>();
 
         if (Files.exists(userDir)) {
             try (DirectoryStream<Path> ds = Files.newDirectoryStream(userDir)) {
-                for (Path p : ds)
+                for (Path p : ds) {
                     if (Files.isRegularFile(p)) names.add(p.getFileName().toString());
+                }
             }
         }
 
@@ -385,33 +252,25 @@ public class Server extends Thread {
         out.flush();
     }
 
-    private void handleDelete(User u, String filename) throws IOException {
-        if (!u.getRole().equals("super")) {
+    private void handleDelete(User requester, String targetUser, String filename) throws IOException {
+        if (!requester.getRole().equals("super")) {
             sendError("Permission denied");
             return;
         }
 
-        Path target = findFileInAllUsers(filename);
-        if (target == null) {
+        if (filename == null || filename.isBlank()) {
+            sendError("Missing filename");
+            return;
+        }
+
+        Path target = safeUserPath(targetUser, filename);
+        if (!Files.exists(target) || !Files.isRegularFile(target)) {
             sendError("Not found");
             return;
         }
 
         Files.delete(target);
         sendOk();
-    }
-
-    private Path findFileInAllUsers(String filename) throws IOException {
-        if (!Files.exists(SERVER_DIR)) return null;
-
-        try (DirectoryStream<Path> ds = Files.newDirectoryStream(SERVER_DIR)) {
-            for (Path dir : ds) {
-                Path candidate = dir.resolve(filename).normalize();
-                if (candidate.startsWith(dir) && Files.exists(candidate))
-                    return candidate;
-            }
-        }
-        return null;
     }
 
     @Override
@@ -423,22 +282,70 @@ public class Server extends Thread {
 
             while (!client.isClosed()) {
                 String line = in.readUTF();
-                String[] parts = line.split("\\s+");
+                if (line == null) break;
 
+                String[] parts = line.trim().split("\\s+");
                 if (parts.length < 2) {
                     sendError("Missing session key");
                     continue;
                 }
 
-                if (!verifySessionKey(parts[1])) continue;
+                String cmd = parts[0].toUpperCase();
+                String providedKey = parts[1];
 
-                User u = users.get(currentUser);
-                switch (parts[0].toUpperCase()) {
-                    case "UPLOAD" -> handleUpload(u, parts[2]);
-                    case "DOWNLOAD" -> handleDownload(u, parts[2]);
-                    case "LIST" -> handleList(u);
-                    case "DELETE" -> handleDelete(u, parts[2]);
-                    default -> sendError("Invalid command");
+                if (!verifySessionKey(providedKey)) break;
+
+                User requester = users.get(currentUser);
+                if (requester == null) {
+                    sendError("Session user not found");
+                    continue;
+                }
+
+                try {
+                    switch (cmd) {
+                        case "UPLOAD" -> {
+                            if (requester.getRole().equals("super")) {
+                                if (parts.length < 4) { sendError("Usage: UPLOAD <key> <user> <filename>"); continue; }
+                                String targetUser = requireTargetUser(requester, parts, 2);
+                                handleUpload(targetUser, parts[3]);
+                            } else {
+                                if (parts.length < 3) { sendError("Usage: UPLOAD <key> <filename>"); continue; }
+                                handleUpload(currentUser, parts[2]);
+                            }
+                        }
+
+                        case "DOWNLOAD" -> {
+                            if (requester.getRole().equals("super")) {
+                                if (parts.length < 4) { sendError("Usage: DOWNLOAD <key> <user> <filename>"); continue; }
+                                String targetUser = requireTargetUser(requester, parts, 2);
+                                handleDownload(targetUser, parts[3]);
+                            } else {
+                                if (parts.length < 3) { sendError("Usage: DOWNLOAD <key> <filename>"); continue; }
+                                handleDownload(currentUser, parts[2]);
+                            }
+                        }
+
+                        case "LIST" -> {
+                            if (requester.getRole().equals("super")) {
+                                if (parts.length < 3) { sendError("Usage: LIST <key> <user>"); continue; }
+                                String targetUser = requireTargetUser(requester, parts, 2);
+                                handleList(targetUser);
+                            } else {
+                                handleList(currentUser);
+                            }
+                        }
+
+                        case "DELETE" -> {
+
+                            if (parts.length < 4) { sendError("Usage: DELETE <key> <user> <filename>"); continue; }
+                            String targetUser = requireTargetUser(requester, parts, 2);
+                            handleDelete(requester, targetUser, parts[3]);
+                        }
+
+                        default -> sendError("Invalid command");
+                    }
+                } catch (IOException ex) {
+                    sendError(ex.getMessage());
                 }
             }
 

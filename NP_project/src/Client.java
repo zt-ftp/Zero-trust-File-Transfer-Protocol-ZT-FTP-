@@ -1,185 +1,4 @@
-//import java.awt.event.ActionListener;
-//import java.io.*;
-//import java.net.Socket;
-//import java.util.Scanner;
-//
-//public class Client {
-//    final int port=4444;
-//    final String host="localhost";
-//    Scanner input;
-//
-//
-//    Socket socket;
-//    BufferedReader in;
-//    PrintWriter out;
-//    private String role;
-//
-//
-//    private void createSocket(String server, int port) throws IOException {
-//        socket=new Socket(server,port);
-//        in=new BufferedReader(new InputStreamReader(socket.getInputStream()));
-//        out =new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-//        input=new Scanner(System.in);
-//
-//
-//    }
-//
-//    private void register() throws IOException {
-//        out.write("register");
-//        out.flush();
-//
-//        System.out.println("Please enter your Username: ");
-//        String username = input.nextLine();
-//        System.out.println("Please Enter your password");
-//        String password = input.nextLine();
-//        System.out.println("Please Enter your role\n enter (1) for normal , enter 2 for super");
-//        int option = input.nextInt();
-//        String role="";
-//        if(option==1)role="normal";
-//        else role="super";
-//        out.write(username + "," + password+","+role);
-//        out.flush();
-//        String response = in.readLine();
-//
-//    }
-//
-//
-//
-//    private boolean login() throws IOException{
-//
-//
-//
-//        while(true) {
-//
-//            out.write("login");
-//            out.flush();
-//
-//            System.out.println("Please enter your Username: ");
-//            String username = input.nextLine();
-//            System.out.println("Please Enter your password");
-//            String password = input.nextLine();
-//            out.write(username + "," + password);
-//            out.flush();
-//            String response = in.readLine();
-//            if (!response.equals("login success")) {
-//                System.out.println("No user with this username or password....");
-//                System.out.println("If you need to try again enter 1 \n if you need to Register enter 2");
-//                int option = input.nextInt();
-//                if (option == 2)return false;
-//            }
-//            else break;
-//        }
-//        return true;
-//    }
-//
-//    private void upload() throws IOException {
-//
-//        System.out.println("Enter file name : ");
-//        String filename=input.nextLine();
-////        out.println("upload");
-////        out.flush();
-//        out.println("upload"+":"+filename);
-//        out.flush();
-//        String response=in.readLine();
-//        if(response.equals("failed")){
-//            System.out.println("No file with this name .....");
-//        }
-//        else {
-//            System.out.println("success uploading..... ");
-//        }
-//
-//    }
-//    private void download() throws IOException {
-//        System.out.println("Enter file name : ");
-//        String filename=input.nextLine();
-////        out.println("download");
-////        out.flush();
-//        out.println("download"+":"+filename);
-//        out.flush();
-//        String response=in.readLine();
-//        if(response.equals("failed")){
-//            System.out.println("No file with this name .....");
-//        }
-//        else {
-//            System.out.println("success downloading ..... ");
-//        }
-//    }
-//    private void delete() throws IOException {
-//        System.out.println("Enter file name : ");
-//        String filename=input.nextLine();
-////        out.println("delete");
-////        out.flush();
-//        out.println("delete"+":"+filename);
-//        out.flush();
-//        String response=in.readLine();
-//        if(response.equals("failed")){
-//            System.out.println("No file with this name .....");
-//        }
-//        else {
-//            System.out.println("success deleting ..... ");
-//        }
-//    }
-//    private void list(){
-//        out.println("list:");
-//        out.flush();
-//        try {
-//            String response = in.readLine();
-//            System.out.println("Your files are : ");
-//            System.out.println(response);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-//
-//
-//
-//    }
-//
-//
-//
-//    public void mainClient() {
-//
-//        try{
-//            createSocket(host, port);
-//            boolean check=login();
-//            if(!check) register();
-//            System.out.println("You have 4 services : ");
-//
-//            while (true) {
-//
-//                System.out.println("Enter 1 if you need to UPLOAD <filename>");
-//                System.out.println("Enter 2 if you need to DOWNLOAD <filename>");
-//                System.out.println("Enter 3 if you need to LIST all files");
-//                System.out.println("Enter 4 if you need to DELETE <filename>");
-//                System.out.println("if you need to leave enter anything else");
-//
-//                String option=input.nextLine();
-//
-//                if (option.equals("1"))upload();
-//                else if (option.equals("2"))download();
-//                else if (option.equals("3"))delete();
-//                else if (option.equals("4"))list();
-//                else break;
-//
-//
-//            }
-//
-//
-//
-//
-//
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }finally{
-//            try{
-//                if(socket!=null)socket.close();
-//            }catch (IOException e){
-//                System.out.println("There is an ERROR "+e.getMessage());
-//            }
-//        }
-//    }
-//}
-
-
+// Client.java
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.*;
@@ -227,7 +46,7 @@ public class Client {
         String password = input.nextLine();
 
         System.out.println("Please Enter your role\n enter (1) for normal , enter (2) for super");
-        int option = Integer.parseInt(input.nextLine());
+        int option = Integer.parseInt(input.nextLine().trim());
         String r = (option == 1) ? "normal" : "super";
 
         out.writeUTF(u + "," + password + "," + r);
@@ -270,7 +89,21 @@ public class Client {
         }
     }
 
+    // Enforce: super MUST type target user (not empty)
+    private String askTargetUserIfSuper() {
+        if (!"super".equalsIgnoreCase(role)) return null;
+
+        while (true) {
+            System.out.println("Enter target username: ");
+            String target = input.nextLine().trim();
+            if (!target.isEmpty()) return target;
+            System.out.println("Target username cannot be empty.");
+        }
+    }
+
     private void upload() throws IOException {
+        String targetUser = askTargetUserIfSuper();
+
         System.out.println("Enter local file path : ");
         String localPath = input.nextLine().trim();
 
@@ -283,7 +116,12 @@ public class Client {
         String filename = path.getFileName().toString();
         long size = Files.size(path);
 
-        out.writeUTF("UPLOAD " + sessionKey + " " + filename);
+        if ("super".equalsIgnoreCase(role)) {
+            out.writeUTF("UPLOAD " + sessionKey + " " + targetUser + " " + filename);
+        } else {
+            out.writeUTF("UPLOAD " + sessionKey + " " + filename);
+        }
+
         out.writeLong(size);
 
         try (InputStream fileIn = Files.newInputStream(path)) {
@@ -295,11 +133,17 @@ public class Client {
     }
 
     private void download() throws IOException {
+        String targetUser = askTargetUserIfSuper();
+
         System.out.println("Enter server file name : ");
         String filename = input.nextLine().trim();
         if (filename.isEmpty()) return;
 
-        out.writeUTF("DOWNLOAD " + sessionKey + " " + filename);
+        if ("super".equalsIgnoreCase(role)) {
+            out.writeUTF("DOWNLOAD " + sessionKey + " " + targetUser + " " + filename);
+        } else {
+            out.writeUTF("DOWNLOAD " + sessionKey + " " + filename);
+        }
         out.flush();
 
         String status = in.readUTF();
@@ -309,9 +153,16 @@ public class Client {
         }
 
         long size = in.readLong();
-        Path outPath = Paths.get("downloaded_" + filename);
 
-        try (OutputStream fileOut = Files.newOutputStream(outPath, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
+        Path outPath;
+        if ("super".equalsIgnoreCase(role)) {
+            outPath = Paths.get("downloaded_" + targetUser + "_" + filename);
+        } else {
+            outPath = Paths.get("downloaded_" + filename);
+        }
+
+        try (OutputStream fileOut = Files.newOutputStream(outPath,
+                StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)) {
             byte[] buffer = new byte[64 * 1024];
             long remaining = size;
             while (remaining > 0) {
@@ -326,7 +177,13 @@ public class Client {
     }
 
     private void list() throws IOException {
-        out.writeUTF("LIST " + sessionKey);
+        String targetUser = askTargetUserIfSuper();
+
+        if ("super".equalsIgnoreCase(role)) {
+            out.writeUTF("LIST " + sessionKey + " " + targetUser);
+        } else {
+            out.writeUTF("LIST " + sessionKey);
+        }
         out.flush();
 
         String status = in.readUTF();
@@ -336,18 +193,25 @@ public class Client {
         }
 
         int count = in.readInt();
-        System.out.println("Your files (" + count + "):");
+        System.out.println("Files (" + count + "):");
         for (int i = 0; i < count; i++) {
             System.out.println("- " + in.readUTF());
         }
     }
 
     private void delete() throws IOException {
+        if (!"super".equalsIgnoreCase(role)) {
+            System.out.println("Permission denied (not super).");
+            return;
+        }
+
+        String targetUser = askTargetUserIfSuper();
+
         System.out.println("Enter server file name : ");
         String filename = input.nextLine().trim();
         if (filename.isEmpty()) return;
 
-        out.writeUTF("DELETE " + sessionKey + " " + filename);
+        out.writeUTF("DELETE " + sessionKey + " " + targetUser + " " + filename);
         out.flush();
 
         System.out.println("Server: " + in.readUTF());
@@ -364,19 +228,19 @@ public class Client {
 
             while (true) {
                 System.out.println();
-                System.out.println("Enter 1 if you need to UPLOAD <filename>");
-                System.out.println("Enter 2 if you need to DOWNLOAD <filename>");
-                System.out.println("Enter 3 if you need to LIST all files");
-                if (role.equals("super"))
-                    System.out.println("Enter 4 if you need to DELETE <filename>");
-                System.out.println("if you need to leave enter anything else");
+                System.out.println("Enter 1 if you need to UPLOAD");
+                System.out.println("Enter 2 if you need to DOWNLOAD");
+                System.out.println("Enter 3 if you need to LIST files");
+                if ("super".equalsIgnoreCase(role))
+                    System.out.println("Enter 4 if you need to DELETE (super only)");
+                System.out.println("Enter anything else to exit");
 
                 String option = input.nextLine().trim();
 
                 if (option.equals("1")) upload();
                 else if (option.equals("2")) download();
                 else if (option.equals("3")) list();
-                else if (role.equals("super")&&option.equals("4")) delete();
+                else if ("super".equalsIgnoreCase(role) && option.equals("4")) delete();
                 else break;
             }
 
